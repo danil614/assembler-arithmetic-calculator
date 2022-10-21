@@ -4,32 +4,32 @@
 
 getNumber proc
 	xor bx, bx
-	xor cx, cx ; флаг знака
+	xor cx, cx ; С„Р»Р°Рі Р·РЅР°РєР°
 	
-	mov ah, 01h ; функция ввода нового символа
+	mov ah, 01h ; С„СѓРЅРєС†РёСЏ РІРІРѕРґР° РЅРѕРІРѕРіРѕ СЃРёРјРІРѕР»Р°
 	int 21h	
-	cmp al, '-' ; если нажали -, то это число отрицательное
+	cmp al, '-' ; РµСЃР»Рё РЅР°Р¶Р°Р»Рё -, С‚Рѕ СЌС‚Рѕ С‡РёСЃР»Рѕ РѕС‚СЂРёС†Р°С‚РµР»СЊРЅРѕРµ
 	jne notNegative
 	mov cx, 1
 	jmp inNextNum
 	
 	inNextNum:
-		mov ah, 01h ; функция ввода нового символа
+		mov ah, 01h ; С„СѓРЅРєС†РёСЏ РІРІРѕРґР° РЅРѕРІРѕРіРѕ СЃРёРјРІРѕР»Р°
 		int 21h
 
-		cmp al, 2Fh ; если нажали enter, то это конец числа 
+		cmp al, 2Fh ; РµСЃР»Рё РЅР°Р¶Р°Р»Рё enter, С‚Рѕ СЌС‚Рѕ РєРѕРЅРµС† С‡РёСЃР»Р° 
 		jl endNumber
 
 	notNegative:
-		sub al, 30h ; делаем из введенного символа число
+		sub al, 30h ; РґРµР»Р°РµРј РёР· РІРІРµРґРµРЅРЅРѕРіРѕ СЃРёРјРІРѕР»Р° С‡РёСЃР»Рѕ
 		xor ah, ah ; ah := 0
 		xchg ax, bx ; (ax, bx) := (bx, ax)
 		mov dx, 0Ah ; dx := 10
-		mul dx ; умножаем на основание системы счисления = 10, dx:ax := dx * ax
+		mul dx ; СѓРјРЅРѕР¶Р°РµРј РЅР° РѕСЃРЅРѕРІР°РЅРёРµ СЃРёСЃС‚РµРјС‹ СЃС‡РёСЃР»РµРЅРёСЏ = 10, dx:ax := dx * ax
 		
-		jo notNumber ; переполнение
+		jo notNumber ; РїРµСЂРµРїРѕР»РЅРµРЅРёРµ
 		
-		add bx, ax ; прибавляем новое число, bx := bx + ax
+		add bx, ax ; РїСЂРёР±Р°РІР»СЏРµРј РЅРѕРІРѕРµ С‡РёСЃР»Рѕ, bx := bx + ax
 
 		jmp inNextNum
 	
@@ -39,45 +39,45 @@ getNumber proc
 		ret
 	
 	negativeEnd:
-		neg bx ; смена знака числа
+		neg bx ; СЃРјРµРЅР° Р·РЅР°РєР° С‡РёСЃР»Р°
 		ret
 	
 	notNumber:
 		mov ah, 02h
 		mov dl, 'X'
 		int 21h
-		mov ax, 4c00h ; выход
+		mov ax, 4c00h ; РІС‹С…РѕРґ
 		int 21h
 		ret
 getNumber endp
 
 printNumber proc ; INPUT: AX
-; Проверяем число на знак.
-	test ax, ax ; == and, но без изменения
-	jns notNegativeNum ; результат неотрицательный => notNegativeNum
+; РџСЂРѕРІРµСЂСЏРµРј С‡РёСЃР»Рѕ РЅР° Р·РЅР°Рє.
+	test ax, ax ; == and, РЅРѕ Р±РµР· РёР·РјРµРЅРµРЅРёСЏ
+	jns notNegativeNum ; СЂРµР·СѓР»СЊС‚Р°С‚ РЅРµРѕС‚СЂРёС†Р°С‚РµР»СЊРЅС‹Р№ => notNegativeNum
 
-; Если оно отрицательное, выведем минус и оставим его модуль.
+; Р•СЃР»Рё РѕРЅРѕ РѕС‚СЂРёС†Р°С‚РµР»СЊРЅРѕРµ, РІС‹РІРµРґРµРј РјРёРЅСѓСЃ Рё РѕСЃС‚Р°РІРёРј РµРіРѕ РјРѕРґСѓР»СЊ.
 	mov cx, ax
 	mov ah, 02h
 	mov dl, '-'
 	int 21h
 	mov ax, cx
-	neg ax ; смена знака числа
+	neg ax ; СЃРјРµРЅР° Р·РЅР°РєР° С‡РёСЃР»Р°
 
 notNegativeNum:
-	xor cx,cx ; cx=0, счетчик
-	mov bx, 0Ah ; перевод в 10-ую сс
+	xor cx,cx ; cx=0, СЃС‡РµС‚С‡РёРє
+	mov bx, 0Ah ; РїРµСЂРµРІРѕРґ РІ 10-СѓСЋ СЃСЃ
 
 outNextNum:
 		xor dx, dx ; dx = 0
 		div bx ; ax mod bx -> dx, ax div bx -> ax
-		push dx ; в стек
+		push dx ; РІ СЃС‚РµРє
 		inc cx ; +1
 		and ax, ax
-		jnz outNextNum ; переход по не равно нулю
+		jnz outNextNum ; РїРµСЂРµС…РѕРґ РїРѕ РЅРµ СЂР°РІРЅРѕ РЅСѓР»СЋ
 		
 	printNumberFromStack:
-		mov ah, 02h ; функция вывода символа
+		mov ah, 02h ; С„СѓРЅРєС†РёСЏ РІС‹РІРѕРґР° СЃРёРјРІРѕР»Р°
 		pop dx
 		add dl, 30h
 		int 21h
@@ -99,15 +99,15 @@ main:
 	pop ax
 	
 	add bx, cx ; bx := bx + cx = b + c
-	shl bx, 1 ; сдвиг влево => bx := bx * 2 = (b + c) * 2
+	shl bx, 1 ; СЃРґРІРёРі РІР»РµРІРѕ => bx := bx * 2 = (b + c) * 2
 
-	shl ax, 1 ; сдвиг влево => ax := ax * 2 = a * 2
-	shl ax, 1 ; сдвиг влево => ax := ax * 2 = a * 4
+	shl ax, 1 ; СЃРґРІРёРі РІР»РµРІРѕ => ax := ax * 2 = a * 2
+	shl ax, 1 ; СЃРґРІРёРі РІР»РµРІРѕ => ax := ax * 2 = a * 4
 
 	sub ax, bx ; ax := ax - bx = a * 4 - (b + c) * 2
 	
 	call printNumber
 	
-	mov ax, 4c00h ; выход
+	mov ax, 4c00h ; РІС‹С…РѕРґ
 	int 21h
 end main
