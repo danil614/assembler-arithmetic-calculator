@@ -1,0 +1,5 @@
+mount c c:\op
+c:
+op
+
+keyb ru 866

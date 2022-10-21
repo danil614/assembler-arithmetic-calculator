@@ -1,62 +1,116 @@
 .MODEL SMALL
 .STACK 100h
+
+.DATA
+TitleMessage db 'EXPRESSION: 4 * A - 2 * (C + B)', 0Dh, 0Ah, '$'
+OverflowMessage db 0Dh, 0Ah, 'OVERFLOW!$' ; 0Dh = 13d = \r = CR, 0Ah = 10d = \n = LF
+ErrorNumberMessage db 0Dh, 0Ah, 'ERROR NUMBER!$'
+EnterNumberA db 'Enter number A: $'
+EnterNumberB db 'Enter number B: $'
+EnterNumberC db 'Enter number C: $'
+ResultNumber db 'Result number: $'
+
 .CODE
 
+; Получает число посимвольно с клавиатуры
+; OUTPUT: AX
 getNumber proc
-	xor bx, bx
+	xor bx, bx ; для входного числа
 	xor cx, cx ; флаг знака
 	
 	mov ah, 01h ; функция ввода нового символа
-	int 21h	
-	cmp al, '-' ; если нажали -, то это число отрицательное
-	jne notNegative
-	mov cx, 1
-	jmp inNextNum
+	int 21h ; вызов прерывания
 	
-	inNextNum:
+	cmp al, '-' ; если нажали -, то отрицательное число
+	jne notNegativeInput
+	mov cx, 1 ; cx := 1
+	
+	nextNumberInput:
 		mov ah, 01h ; функция ввода нового символа
 		int 21h
 
-		cmp al, 2Fh ; если нажали enter, то это конец числа 
-		jl endNumber
+		cmp al, 0Dh ; если нажали enter, то это конец числа 
+		je endNumber
 
-	notNegative:
+	notNegativeInput:
+		cmp al, 30h ; если введен неверный символ < 0
+		jl inputError
+		cmp al, 39h ; если введен неверный символ > 9
+		jg inputError
+		
 		sub al, 30h ; делаем из введенного символа число
 		xor ah, ah ; ah := 0
+		
+		; ax - введенная цифра
+		; bx - полное число
 		xchg ax, bx ; (ax, bx) := (bx, ax)
+		; ax - полное число
+		; bx - введенная цифра
+		
 		mov dx, 0Ah ; dx := 10
 		mul dx ; умножаем на основание системы счисления = 10, dx:ax := dx * ax
 		
-		jo notNumber ; переполнение
+		call checkOverflow ; проверка переполнения
 		
 		add bx, ax ; прибавляем новое число, bx := bx + ax
 
-		jmp inNextNum
+		jmp nextNumberInput
 	
 	endNumber:
-		cmp cx, 1
+		mov ax, bx ; ax := bx
+		cmp cx, 1 ; если cx = 1, то число отрицательное
 		je negativeEnd
 		ret
 	
 	negativeEnd:
-		neg bx ; смена знака числа
+		neg ax ; смена знака числа
 		ret
 	
-	notNumber:
-		mov ah, 02h
-		mov dl, 'X'
-		int 21h
-		mov ax, 4c00h ; выход
-		int 21h
-		ret
+	inputError:
+		mov dx, offset ErrorNumberMessage
+		call printMessage ; вывод сообщения
+		call exitProgram
+
 getNumber endp
 
-printNumber proc ; INPUT: AX
-; Проверяем число на знак.
-	test ax, ax ; == and, но без изменения
-	jns notNegativeNum ; результат неотрицательный => notNegativeNum
+; Печатает сообщение из регистра DX
+; INPUT: DX
+printMessage proc
+	push ax
+	
+	mov ah, 09h ; номер прерывания
+	int 21h ; вызов прерывания
+	
+	pop ax
+	ret
+printMessage endp
 
-; Если оно отрицательное, выведем минус и оставим его модуль.
+; Закрывает программу
+exitProgram proc
+	mov ax, 4C00h ; выход из программы
+	int 21h
+	ret
+exitProgram endp
+
+; Проверка на переполнение
+checkOverflow proc
+	jo overflowNumber ; проверка переполнения
+	ret
+	
+	overflowNumber:
+		mov dx, offset OverflowMessage
+		call printMessage ; вывод сообщения
+		call exitProgram
+checkOverflow endp
+
+; Печатает число из регистра AX
+; INPUT: AX
+printNumber proc
+	; Проверяем число на знак.
+	test ax, ax ; test == and, но без изменения регистра ax -------------------------
+	jns notNegative ; результат неотрицательный => notNegative
+
+	; Если оно отрицательное, выведем минус и оставим его модуль.
 	mov cx, ax
 	mov ah, 02h
 	mov dl, '-'
@@ -64,17 +118,17 @@ printNumber proc ; INPUT: AX
 	mov ax, cx
 	neg ax ; смена знака числа
 
-notNegativeNum:
-	xor cx,cx ; cx=0, счетчик
-	mov bx, 0Ah ; перевод в 10-ую сс
+	notNegative:
+		xor cx, cx ; cx=0, счетчик
+		mov bx, 0Ah ; перевод в 10-ую сс
 
-outNextNum:
+	nextNumber:
 		xor dx, dx ; dx = 0
 		div bx ; ax mod bx -> dx, ax div bx -> ax
 		push dx ; в стек
 		inc cx ; +1
 		and ax, ax
-		jnz outNextNum ; переход по не равно нулю
+		jnz nextNumber ; переход по не равно нулю
 		
 	printNumberFromStack:
 		mov ah, 02h ; функция вывода символа
@@ -82,32 +136,57 @@ outNextNum:
 		add dl, 30h
 		int 21h
 		dec cx ; -1
-		jnz printNumberFromStack
+		jnz printNumberFromStack ; переход по не равно нулю
 		ret
 printNumber endp
 
 main:
+	mov ax, @data ; смещение для данных
+	mov ds, ax ; указание сегмента данных
+	
+	mov dx, offset TitleMessage ; вывод заголовка программы
+	call printMessage ; вывод сообщения
+	
+	; Ввод чисел A, B, C
+	mov dx, offset EnterNumberA
+	call printMessage ; вывод сообщения
 	call getNumber
-	push bx
+	push ax
+	
+	mov dx, offset EnterNumberB
+	call printMessage ; вывод сообщения
 	call getNumber
-	push bx
+	push ax
+	
+	mov dx, offset EnterNumberC
+	call printMessage ; вывод сообщения
 	call getNumber
-	push bx
+	push ax
 
+	; Достаем из стека
 	pop cx
 	pop bx
 	pop ax
 	
 	add bx, cx ; bx := bx + cx = b + c
+	call checkOverflow ; проверка переполнения
+	
 	shl bx, 1 ; сдвиг влево => bx := bx * 2 = (b + c) * 2
+	call checkOverflow ; проверка переполнения
 
 	shl ax, 1 ; сдвиг влево => ax := ax * 2 = a * 2
+	call checkOverflow ; проверка переполнения
+	
 	shl ax, 1 ; сдвиг влево => ax := ax * 2 = a * 4
+	call checkOverflow ; проверка переполнения
 
 	sub ax, bx ; ax := ax - bx = a * 4 - (b + c) * 2
+	call checkOverflow ; проверка переполнения
 	
+	mov dx, offset ResultNumber
+	call printMessage ; вывод сообщения
 	call printNumber
 	
-	mov ax, 4c00h ; выход
+	mov ax, 4C00h ; выход из программы
 	int 21h
 end main
