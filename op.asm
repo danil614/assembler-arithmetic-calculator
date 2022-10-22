@@ -22,24 +22,23 @@ getNumber proc
 	int 21h ; вызов прерывания
 	
 	cmp al, '-' ; если нажали -, то отрицательное число
-	jne notNegativeInput
+	jne notNegative
 	mov cx, 1 ; cx := 1
 	
-	nextNumberInput:
+	nextNumber:
 		mov ah, 01h ; функция ввода нового символа
 		int 21h
 
 		cmp al, 0Dh ; если нажали enter, то это конец числа 
 		je endNumber
 
-	notNegativeInput:
+	notNegative:
 		cmp al, 30h ; если введен неверный символ < 0
 		jl inputError
 		cmp al, 39h ; если введен неверный символ > 9
 		jg inputError
 		
-		sub al, 30h ; делаем из введенного символа число
-		xor ah, ah ; ah := 0
+		and ax, 0Fh ; делаем из введенного символа число
 		
 		; ax - введенная цифра
 		; bx - полное число
@@ -54,7 +53,7 @@ getNumber proc
 		
 		add bx, ax ; прибавляем новое число, bx := bx + ax
 
-		jmp nextNumberInput
+		jmp nextNumber
 	
 	endNumber:
 		mov ax, bx ; ax := bx
@@ -107,7 +106,7 @@ checkOverflow endp
 ; INPUT: AX
 printNumber proc
 	; Проверяем число на знак.
-	test ax, ax ; test == and, но без изменения регистра ax -------------------------
+	and ax, ax
 	jns notNegative ; результат неотрицательный => notNegative
 
 	; Если оно отрицательное, выведем минус и оставим его модуль.
@@ -130,13 +129,13 @@ printNumber proc
 		and ax, ax
 		jnz nextNumber ; переход по не равно нулю
 		
-	printNumberFromStack:
+	printFromStack:
 		mov ah, 02h ; функция вывода символа
 		pop dx
-		add dl, 30h
+		or dl, 30h ; число в символ
 		int 21h
 		dec cx ; -1
-		jnz printNumberFromStack ; переход по не равно нулю
+		jnz printFromStack ; переход по не равно нулю
 		ret
 printNumber endp
 

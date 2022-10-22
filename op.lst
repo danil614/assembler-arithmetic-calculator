@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 6.14.8444		    10/21/22 20:01:31
+Microsoft (R) Macro Assembler Version 6.14.8444		    10/22/22 23:37:16
 op.asm							     Page 1 - 1
 
 
@@ -42,175 +42,174 @@ op.asm							     Page 1 - 1
  0006  CD 21				int 21h ; вызов прерывания
 					
  0008  3C 2D				cmp al, '-' ; если нажали -, то отрицательное число
- 000A  75 0B				jne notNegativeInput
+ 000A  75 0B				jne notNegative
  000C  B9 0001				mov cx, 1 ; cx := 1
 					
- 000F					nextNumberInput:
+ 000F					nextNumber:
  000F  B4 01					mov ah, 01h ; функция ввода нового символа
  0011  CD 21					int 21h
 
  0013  3C 0D					cmp al, 0Dh ; если нажали enter, то это конец числа 
- 0015  74 19					je endNumber
+ 0015  74 18					je endNumber
 
- 0017					notNegativeInput:
+ 0017					notNegative:
  0017  3C 30					cmp al, 30h ; если введен неверный символ < 0
- 0019  7C 20					jl inputError
+ 0019  7C 1F					jl inputError
  001B  3C 39					cmp al, 39h ; если введен неверный символ > 9
- 001D  7F 1C					jg inputError
+ 001D  7F 1B					jg inputError
 						
- 001F  2C 30					sub al, 30h ; делаем из введенного символа число
- 0021  32 E4					xor ah, ah ; ah := 0
+ 001F  83 E0 0F					and ax, 0Fh ; делаем из введенного символа число
 						
 						; ax - введенная цифра
 						; bx - полное число
- 0023  93					xchg ax, bx ; (ax, bx) := (bx, ax)
+ 0022  93					xchg ax, bx ; (ax, bx) := (bx, ax)
 						; ax - полное число
 						; bx - введенная цифра
 						
- 0024  BA 000A					mov dx, 0Ah ; dx := 10
- 0027  F7 E2					mul dx ; умножаем на основание системы счисления = 10, dx:ax := dx * ax
+ 0023  BA 000A					mov dx, 0Ah ; dx := 10
+ 0026  F7 E2					mul dx ; умножаем на основание системы счисления = 10, dx:ax := dx * ax
 						
- 0029  E8 0025					call checkOverflow ; проверка переполнения
+ 0028  E8 0025					call checkOverflow ; проверка переполнения
 						
- 002C  03 D8					add bx, ax ; прибавляем новое число, bx := bx + ax
+ 002B  03 D8					add bx, ax ; прибавляем новое число, bx := bx + ax
 
- 002E  EB DF					jmp nextNumberInput
+ 002D  EB E0					jmp nextNumber
 					
- 0030					endNumber:
- 0030  8B C3					mov ax, bx ; ax := bx
- 0032  83 F9 01					cmp cx, 1 ; если cx = 1, то число отрицательное
- 0035  74 01					je negativeEnd
- 0037  C3					ret
+ 002F					endNumber:
+ 002F  8B C3					mov ax, bx ; ax := bx
+ 0031  83 F9 01					cmp cx, 1 ; если cx = 1, то число отрицательное
+ 0034  74 01					je negativeEnd
+ 0036  C3					ret
 					
- 0038					negativeEnd:
- 0038  F7 D8					neg ax ; смена знака числа
- 003A  C3					ret
+ 0037					negativeEnd:
+ 0037  F7 D8					neg ax ; смена знака числа
+ 0039  C3					ret
 					
- 003B					inputError:
- 003B  BA 002E R				mov dx, offset ErrorNumberMessage
- 003E  E8 0003					call printMessage ; вывод сообщения
- 0041  E8 0007					call exitProgram
+ 003A					inputError:
+ 003A  BA 002E R				mov dx, offset ErrorNumberMessage
+ 003D  E8 0003					call printMessage ; вывод сообщения
+ 0040  E8 0007					call exitProgram
 
- 0044				getNumber endp
+ 0043				getNumber endp
 
 				; Печатает сообщение из регистра DX
 				; INPUT: DX
- 0044				printMessage proc
- 0044  50				push ax
+ 0043				printMessage proc
+ 0043  50				push ax
 					
- 0045  B4 09				mov ah, 09h ; номер прерывания
- 0047  CD 21				int 21h ; вызов прерывания
+ 0044  B4 09				mov ah, 09h ; номер прерывания
+ 0046  CD 21				int 21h ; вызов прерывания
 					
- 0049  58				pop ax
- 004A  C3				ret
- 004B				printMessage endp
+ 0048  58				pop ax
+ 0049  C3				ret
+ 004A				printMessage endp
 
 				; Закрывает программу
- 004B				exitProgram proc
- 004B  B8 4C00				mov ax, 4C00h ; выход из программы
- 004E  CD 21				int 21h
- 0050  C3				ret
- 0051				exitProgram endp
+ 004A				exitProgram proc
+ 004A  B8 4C00				mov ax, 4C00h ; выход из программы
+ 004D  CD 21				int 21h
+ 004F  C3				ret
+ 0050				exitProgram endp
 
 				; Проверка на переполнение
- 0051				checkOverflow proc
- 0051  70 01				jo overflowNumber ; проверка переполнения
- 0053  C3				ret
+ 0050				checkOverflow proc
+ 0050  70 01				jo overflowNumber ; проверка переполнения
+ 0052  C3				ret
 					
- 0054					overflowNumber:
- 0054  BA 0022 R				mov dx, offset OverflowMessage
- 0057  E8 FFEA					call printMessage ; вывод сообщения
- 005A  E8 FFEE					call exitProgram
- 005D				checkOverflow endp
+ 0053					overflowNumber:
+ 0053  BA 0022 R				mov dx, offset OverflowMessage
+ 0056  E8 FFEA					call printMessage ; вывод сообщения
+ 0059  E8 FFEE					call exitProgram
+ 005C				checkOverflow endp
 
 				; Печатает число из регистра AX
 				; INPUT: AX
- 005D				printNumber proc
+ 005C				printNumber proc
 					; Проверяем число на знак.
- 005D  85 C0				test ax, ax ; test == and, но без изменения регистра ax -------------------------
- 005F  79 0C				jns notNegative ; результат неотрицательный => notNegative
+ 005C  23 C0				and ax, ax
+ 005E  79 0C				jns notNegative ; результат неотрицательный => notNegative
 
 					; Если оно отрицательное, выведем минус и оставим его модуль.
- 0061  8B C8				mov cx, ax
- 0063  B4 02				mov ah, 02h
- 0065  B2 2D				mov dl, '-'
- 0067  CD 21				int 21h
- 0069  8B C1				mov ax, cx
- 006B  F7 D8				neg ax ; смена знака числа
+ 0060  8B C8				mov cx, ax
+ 0062  B4 02				mov ah, 02h
+ 0064  B2 2D				mov dl, '-'
+ 0066  CD 21				int 21h
+ 0068  8B C1				mov ax, cx
+ 006A  F7 D8				neg ax ; смена знака числа
 
- 006D					notNegative:
- 006D  33 C9					xor cx, cx ; cx=0, счетчик
- 006F  BB 000A					mov bx, 0Ah ; перевод в 10-ую сс
+ 006C					notNegative:
+ 006C  33 C9					xor cx, cx ; cx=0, счетчик
+ 006E  BB 000A					mov bx, 0Ah ; перевод в 10-ую сс
 
- 0072					nextNumber:
- 0072  33 D2					xor dx, dx ; dx = 0
- 0074  F7 F3					div bx ; ax mod bx -> dx, ax div bx -> ax
- 0076  52					push dx ; в стек
- 0077  41					inc cx ; +1
- 0078  23 C0					and ax, ax
- 007A  75 F6					jnz nextNumber ; переход по не равно нулю
+ 0071					nextNumber:
+ 0071  33 D2					xor dx, dx ; dx = 0
+ 0073  F7 F3					div bx ; ax mod bx -> dx, ax div bx -> ax
+ 0075  52					push dx ; в стек
+ 0076  41					inc cx ; +1
+ 0077  23 C0					and ax, ax
+ 0079  75 F6					jnz nextNumber ; переход по не равно нулю
 						
- 007C					printNumberFromStack:
- 007C  B4 02					mov ah, 02h ; функция вывода символа
- 007E  5A					pop dx
- 007F  80 C2 30					add dl, 30h
- 0082  CD 21					int 21h
- 0084  49					dec cx ; -1
- 0085  75 F5					jnz printNumberFromStack ; переход по не равно нулю
- 0087  C3					ret
- 0088				printNumber endp
+ 007B					printFromStack:
+ 007B  B4 02					mov ah, 02h ; функция вывода символа
+ 007D  5A					pop dx
+ 007E  80 CA 30					or dl, 30h ; число в символ
+ 0081  CD 21					int 21h
+ 0083  49					dec cx ; -1
+ 0084  75 F5					jnz printFromStack ; переход по не равно нулю
+ 0086  C3					ret
+ 0087				printNumber endp
 
- 0088				main:
- 0088  B8 ---- R			mov ax, @data ; смещение для данных
- 008B  8E D8				mov ds, ax ; указание сегмента данных
+ 0087				main:
+ 0087  B8 ---- R			mov ax, @data ; смещение для данных
+ 008A  8E D8				mov ds, ax ; указание сегмента данных
 					
- 008D  BA 0000 R			mov dx, offset TitleMessage ; вывод заголовка программы
- 0090  E8 FFB1				call printMessage ; вывод сообщения
+ 008C  BA 0000 R			mov dx, offset TitleMessage ; вывод заголовка программы
+ 008F  E8 FFB1				call printMessage ; вывод сообщения
 					
 					; Ввод чисел A, B, C
- 0093  BA 003E R			mov dx, offset EnterNumberA
- 0096  E8 FFAB				call printMessage ; вывод сообщения
- 0099  E8 FF64				call getNumber
- 009C  50				push ax
+ 0092  BA 003E R			mov dx, offset EnterNumberA
+ 0095  E8 FFAB				call printMessage ; вывод сообщения
+ 0098  E8 FF65				call getNumber
+ 009B  50				push ax
 					
- 009D  BA 004F R			mov dx, offset EnterNumberB
- 00A0  E8 FFA1				call printMessage ; вывод сообщения
- 00A3  E8 FF5A				call getNumber
- 00A6  50				push ax
+ 009C  BA 004F R			mov dx, offset EnterNumberB
+ 009F  E8 FFA1				call printMessage ; вывод сообщения
+ 00A2  E8 FF5B				call getNumber
+ 00A5  50				push ax
 					
- 00A7  BA 0060 R			mov dx, offset EnterNumberC
- 00AA  E8 FF97				call printMessage ; вывод сообщения
- 00AD  E8 FF50				call getNumber
- 00B0  50				push ax
+ 00A6  BA 0060 R			mov dx, offset EnterNumberC
+ 00A9  E8 FF97				call printMessage ; вывод сообщения
+ 00AC  E8 FF51				call getNumber
+ 00AF  50				push ax
 
 					; Достаем из стека
- 00B1  59				pop cx
- 00B2  5B				pop bx
- 00B3  58				pop ax
+ 00B0  59				pop cx
+ 00B1  5B				pop bx
+ 00B2  58				pop ax
 					
- 00B4  03 D9				add bx, cx ; bx := bx + cx = b + c
- 00B6  E8 FF98				call checkOverflow ; проверка переполнения
+ 00B3  03 D9				add bx, cx ; bx := bx + cx = b + c
+ 00B5  E8 FF98				call checkOverflow ; проверка переполнения
 					
- 00B9  D1 E3				shl bx, 1 ; сдвиг влево => bx := bx * 2 = (b + c) * 2
- 00BB  E8 FF93				call checkOverflow ; проверка переполнения
+ 00B8  D1 E3				shl bx, 1 ; сдвиг влево => bx := bx * 2 = (b + c) * 2
+ 00BA  E8 FF93				call checkOverflow ; проверка переполнения
 
- 00BE  D1 E0				shl ax, 1 ; сдвиг влево => ax := ax * 2 = a * 2
- 00C0  E8 FF8E				call checkOverflow ; проверка переполнения
+ 00BD  D1 E0				shl ax, 1 ; сдвиг влево => ax := ax * 2 = a * 2
+ 00BF  E8 FF8E				call checkOverflow ; проверка переполнения
 					
- 00C3  D1 E0				shl ax, 1 ; сдвиг влево => ax := ax * 2 = a * 4
- 00C5  E8 FF89				call checkOverflow ; проверка переполнения
+ 00C2  D1 E0				shl ax, 1 ; сдвиг влево => ax := ax * 2 = a * 4
+ 00C4  E8 FF89				call checkOverflow ; проверка переполнения
 
- 00C8  2B C3				sub ax, bx ; ax := ax - bx = a * 4 - (b + c) * 2
- 00CA  E8 FF84				call checkOverflow ; проверка переполнения
+ 00C7  2B C3				sub ax, bx ; ax := ax - bx = a * 4 - (b + c) * 2
+ 00C9  E8 FF84				call checkOverflow ; проверка переполнения
 					
- 00CD  BA 0071 R			mov dx, offset ResultNumber
- 00D0  E8 FF71				call printMessage ; вывод сообщения
- 00D3  E8 FF87				call printNumber
+ 00CC  BA 0071 R			mov dx, offset ResultNumber
+ 00CF  E8 FF71				call printMessage ; вывод сообщения
+ 00D2  E8 FF87				call printNumber
 					
- 00D6  B8 4C00				mov ax, 4C00h ; выход из программы
- 00D9  CD 21				int 21h
+ 00D5  B8 4C00				mov ax, 4C00h ; выход из программы
+ 00D8  CD 21				int 21h
 				end main
-Microsoft (R) Macro Assembler Version 6.14.8444		    10/21/22 20:01:31
+Microsoft (R) Macro Assembler Version 6.14.8444		    10/22/22 23:37:16
 op.asm							     Symbols 2 - 1
 
 
@@ -223,27 +222,27 @@ Segments and Groups:
 DGROUP . . . . . . . . . . . . .	GROUP
 _DATA  . . . . . . . . . . . . .	16 Bit	 0081	  Word	  Public  'DATA'	
 STACK  . . . . . . . . . . . . .	16 Bit	 0100	  Para	  Stack	  'STACK'	 
-_TEXT  . . . . . . . . . . . . .	16 Bit	 00DB	  Word	  Public  'CODE'	
+_TEXT  . . . . . . . . . . . . .	16 Bit	 00DA	  Word	  Public  'CODE'	
 
 
 Procedures,  parameters and locals:
 
                 N a m e                 Type     Value    Attr
 
-checkOverflow  . . . . . . . . .	P Near	 0051	  _TEXT	Length= 000C Public
-  overflowNumber . . . . . . . .	L Near	 0054	  _TEXT	
-exitProgram  . . . . . . . . . .	P Near	 004B	  _TEXT	Length= 0006 Public
-getNumber  . . . . . . . . . . .	P Near	 0000	  _TEXT	Length= 0044 Public
-  nextNumberInput  . . . . . . .	L Near	 000F	  _TEXT	
-  notNegativeInput . . . . . . .	L Near	 0017	  _TEXT	
-  endNumber  . . . . . . . . . .	L Near	 0030	  _TEXT	
-  negativeEnd  . . . . . . . . .	L Near	 0038	  _TEXT	
-  inputError . . . . . . . . . .	L Near	 003B	  _TEXT	
-printMessage . . . . . . . . . .	P Near	 0044	  _TEXT	Length= 0007 Public
-printNumber  . . . . . . . . . .	P Near	 005D	  _TEXT	Length= 002B Public
-  notNegative  . . . . . . . . .	L Near	 006D	  _TEXT	
-  nextNumber . . . . . . . . . .	L Near	 0072	  _TEXT	
-  printNumberFromStack . . . . .	L Near	 007C	  _TEXT	
+checkOverflow  . . . . . . . . .	P Near	 0050	  _TEXT	Length= 000C Public
+  overflowNumber . . . . . . . .	L Near	 0053	  _TEXT	
+exitProgram  . . . . . . . . . .	P Near	 004A	  _TEXT	Length= 0006 Public
+getNumber  . . . . . . . . . . .	P Near	 0000	  _TEXT	Length= 0043 Public
+  nextNumber . . . . . . . . . .	L Near	 000F	  _TEXT	
+  notNegative  . . . . . . . . .	L Near	 0017	  _TEXT	
+  endNumber  . . . . . . . . . .	L Near	 002F	  _TEXT	
+  negativeEnd  . . . . . . . . .	L Near	 0037	  _TEXT	
+  inputError . . . . . . . . . .	L Near	 003A	  _TEXT	
+printMessage . . . . . . . . . .	P Near	 0043	  _TEXT	Length= 0007 Public
+printNumber  . . . . . . . . . .	P Near	 005C	  _TEXT	Length= 002B Public
+  notNegative  . . . . . . . . .	L Near	 006C	  _TEXT	
+  nextNumber . . . . . . . . . .	L Near	 0071	  _TEXT	
+  printFromStack . . . . . . . .	L Near	 007B	  _TEXT	
 
 
 Symbols:
@@ -266,7 +265,7 @@ ErrorNumberMessage . . . . . . .	Byte	 002E	  _DATA
 OverflowMessage  . . . . . . . .	Byte	 0022	  _DATA	
 ResultNumber . . . . . . . . . .	Byte	 0071	  _DATA	
 TitleMessage . . . . . . . . . .	Byte	 0000	  _DATA	
-main . . . . . . . . . . . . . .	L Near	 0088	  _TEXT	
+main . . . . . . . . . . . . . .	L Near	 0087	  _TEXT	
 
 	   0 Warnings
 	   0 Errors
